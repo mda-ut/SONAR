@@ -34,17 +34,17 @@ module FancySlave (resetn, SCLK, MOSI, MISOA, MISOB, SS, Hex0, Hex1, Hex2, Hex3,
 	//	Additional Wires	//
 	wire [5:0] slave_counter_bit;
 	wire Des_en, Tri_en, Ser_en;
-	wire [15:0]DOS;
-	wire DIS, A, B;
-	wire [13:0] SA, SB;
+	wire [15:0]dataOutOfSlave;
+	wire dataIntoSlave, LineOutA, LineOutB;
+	wire [13:0] qChannelA, qChannelB;
 	
 	//	Early wire assignments	//
 	assign Des_en = ~SS & ~slave_counter_bit[5] & ~slave_counter_bit[4];
 	assign Tri_en = ~SS & ~slave_counter_bit[5] & slave_counter_bit[4] & ~slave_counter_bit[3] & ~slave_counter_bit[2] & (slave_counter_bit[1] ^ slave_counter_bit[0]);
 	assign Ser_en = ~SS & (~slave_counter_bit[5] & slave_counter_bit[4] & (slave_counter_bit[3] | slave_counter_bit[2] | slave_counter_bit[1] & slave_counter_bit[0] ) ) | (slave_counter_bit[5] & ~slave_counter_bit[4] & ~slave_counter_bit[3] & ~slave_counter_bit[2] & ~slave_counter_bit[1] & ~slave_counter_bit[0]);
 	
-	assign A = SA[13];
-	assign B = SB[13];
+	assign LineOutA = qChannelA[13];
+	assign LineOutB = qChannelB[13];
 	
 	//	Debug Assignments //
 //	assign Lights[16] = SCLK;
@@ -62,81 +62,88 @@ module FancySlave (resetn, SCLK, MOSI, MISOA, MISOB, SS, Hex0, Hex1, Hex2, Hex3,
 	Counter
 	
 	*/	
-	SixBitCounterAsync HootHoot(
-											.clk(~SCLK),
-											.resetn(resetn & ~SS),
-											.enable(~SS & ~(slave_counter_bit[5] & ~slave_counter_bit[4] & ~slave_counter_bit[3] & ~slave_counter_bit[2] & ~slave_counter_bit[1] & slave_counter_bit[0]) ),
-											.q(slave_counter_bit)
-										);
+	SixBitCounterAsync HootHoot
+	(
+		.clk(~SCLK),
+		.resetn(resetn & ~SS),
+		.enable(~SS & ~(slave_counter_bit[5] & ~slave_counter_bit[4] & ~slave_counter_bit[3] & ~slave_counter_bit[2] & ~slave_counter_bit[1] & slave_counter_bit[0]) ),
+		.q(slave_counter_bit)
+	);
 				
 	/*
 	
 	Deserializer
 	
 	*/	
-	ShiftRegisterWEnableSixteen Registeel(
-															.clk(~SCLK), 
-															.resetn(resetn), 
-															.enable(Des_en), 
-															.d(DIS), 
-															.q(DOS)
-														);
+	ShiftRegisterWEnableSixteen Registeel
+	(
+		.clk(~SCLK), 
+		.resetn(resetn), 
+		.enable(Des_en), 
+		.d(dataIntoSlave), 
+		.q(dataOutOfSlave)
+	);
 								
 	/*
 	
 	Serializer
 	
 	*/
-	ShiftRegisterWEnableFourteenAsyncMuxedInput OutboxA(
-																			.clk(~SCLK), 
-																			.resetn(resetn), 
-																			.enable(Ser_en | ~Keys[0]), 
-																			.select(~Keys[0]), 
-																			.d(Switches[13:0]), 
-																			.q(SA) 
-																		);
+	ShiftRegisterWEnableFourteenAsyncMuxedInput OutboxA
+	(
+		.clk(~SCLK), 
+		.resetn(resetn), 
+		.enable(Ser_en | ~Keys[0]), 
+		.select(~Keys[0]), 
+		.d(Switches[13:0]), 
+		.q(qChannelA) 
+	);
 												
-	ShiftRegisterWEnableFourteenAsyncMuxedInput OutboxB(
-																			.clk(~SCLK), 
-																			.resetn(resetn), 
-																			.enable(Ser_en | ~Keys[1]), 
-																			.select(~Keys[1]), 
-																			.d(Switches[13:0]), 
-																			.q(SB) 
-																		);
+	ShiftRegisterWEnableFourteenAsyncMuxedInput OutboxB
+	(
+		.clk(~SCLK), 
+		.resetn(resetn), 
+		.enable(Ser_en | ~Keys[1]), 
+		.select(~Keys[1]), 
+		.d(Switches[13:0]), 
+		.q(qChannelB) 
+	);
 												
 	/*
 	
 	Tri-state
 	
 	*/
-	TriStateBuffer BorderGuard1(
-											.In(MOSI), 
-											.Select(Des_en), 
-											.Out(DIS)
-										);
+	TriStateBuffer BorderGuard1
+	(
+		.In(MOSI), 
+		.Select(Des_en), 
+		.Out(dataIntoSlave)
+	);
 								
-	TriStateBuffer BorderGuardA(
-											.In(A), 
-											.Select(Ser_en), 
-											.Out(MISOA)
-										);
+	TriStateBuffer BorderGuardA
+	(
+		.In(LineOutA), 
+		.Select(Ser_en), 
+		.Out(MISOA)
+	);
 								
-	TriStateBuffer BorderGuardB(
-											.In(B), 
-											.Select(Ser_en), 
-											.Out(MISOB)
-										);
+	TriStateBuffer BorderGuardB
+	(
+		.In(LineOutB), 
+		.Select(Ser_en), 
+		.Out(MISOB)
+	);
 	
 	/*
 	
 	HEXs
 	
 	*/
-	SevenSegmentDisplayDecoder One(.ssOut(Hex0), .nIn(DOS[3:0]));
-	SevenSegmentDisplayDecoder Two(.ssOut(Hex1), .nIn(DOS[7:4]));
-	SevenSegmentDisplayDecoder Three(.ssOut(Hex2), .nIn(DOS[11:8]));
-	SevenSegmentDisplayDecoder Four(.ssOut(Hex3), .nIn(DOS[15:12]));
+	SevenSegmentDisplayDecoder One(.ssOut(Hex0), .nIn(dataOutOfSlave[3:0]));
+	SevenSegmentDisplayDecoder Two(.ssOut(Hex1), .nIn(dataOutOfSlave[7:4]));
+	SevenSegmentDisplayDecoder Three(.ssOut(Hex2), .nIn(dataOutOfSlave[11:8]));
+	SevenSegmentDisplayDecoder Four(.ssOut(Hex3), .nIn(dataOutOfSlave[15:12]));
 	
 	SevenSegmentDisplayDecoder CounterHigher(.ssOut(Hex5), .nIn(slave_counter_bit[5:4]));
 	SevenSegmentDisplayDecoder CounterLower(.ssOut(Hex4), .nIn(slave_counter_bit[3:0]));
@@ -146,11 +153,13 @@ module FancySlave (resetn, SCLK, MOSI, MISOA, MISOB, SS, Hex0, Hex1, Hex2, Hex3,
 	Mux
 	
 	*/
-	mux2to1_14bit FancySwitch(
-											.data0(SA),
-											.data1(SB),
-											.sel(Switches[14]),
-											.result(Lights)
-										);
+	mux2to1_14bit FancySwitch
+	(
+		.data0(qChannelA),
+		.data1(qChannelB),
+		.sel(Switches[14]),
+		.result(Lights)
+	);
 	
 endmodule
+
