@@ -1,11 +1,12 @@
 /*
 Anthony De Caria - April 5, 2013
 
-This is a tri-state buffer.
+This is a 1-bit tri-state buffer.
 */
-module TriStateBuffer (In, Select, Out);
+module TriStateBuffer_2_1bit (In, Select, Out);
 	//	I/Os	//
-	input In, Select;
+	input In; 
+	input Select;
 	output reg Out;
 	
 	always@(In, Select)

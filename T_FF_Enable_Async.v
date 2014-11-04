@@ -1,10 +1,10 @@
 /*
-Anthony De Caria
+Anthony De Caria - November 04, 2014
 
-This is a D Flip Flop with a seperate enable.
+This is a T Flip Flop that has an enable and an asynchronous reset.
 */
 
-module D_FF_with_Enable(clk, resetn, enable, d, q);
+module T_FF_Enable_Async(clk, resetn, enable, d, q);
 	
 	input clk;
 	input resetn;
@@ -22,7 +22,10 @@ module D_FF_with_Enable(clk, resetn, enable, d, q);
 		begin
 			if (enable)
 			begin
-				q <= d;
+				if (d)
+				begin
+					q <= !q;
+				end
 			end
 		end
 	end

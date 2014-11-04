@@ -1,10 +1,10 @@
 /*
-Anthony De Caria - April 5, 2014
+Anthony De Caria - November 04, 2014
 
-This is a T Flip Flop that has an enable and is asyncronous.
+This is a D Flip Flop with a separate enable and an asynchronous reset.
 */
 
-module T_FF_with_Enable_Async(clk, resetn, enable, d, q);
+module D_FF_Enable_Async(clk, resetn, enable, d, q);
 	
 	input clk;
 	input resetn;
@@ -22,10 +22,7 @@ module T_FF_with_Enable_Async(clk, resetn, enable, d, q);
 		begin
 			if (enable)
 			begin
-				if (d)
-				begin
-				q <= !q;
-				end
+				q <= d;
 			end
 		end
 	end

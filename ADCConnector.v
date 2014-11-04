@@ -8,7 +8,7 @@ It takes key signals from NIOS (CPOL, CPHA, ss), and transforms them into SCLK a
 
 In addition, it also creates the structures needed to collect and transmit data to and from the AD7264s
 A 16-bit serializer for transmitting.
-And two 14-bit deserializers for recieveing, as the AD7264 is a dual channel device.
+And two 14-bit deserializers for receiving, as the AD7264 is a dual channel device.
 */
 
 module ADCConnector 
@@ -90,7 +90,7 @@ module ADCConnector
 	This is the counter that will be used to pace out the sending out and receiving parts of the 
 	
 	*/	
-	SixBitCounterAsync PocketWatch
+	 Six_Bit_Counter_Enable_Async PocketWatch
 	(
 		.clk(SPIClock), 
 		.resetn(resetn & ~SS), 
@@ -123,7 +123,7 @@ module ADCConnector
 	Serializers
 	
 	*/
-	ShiftRegisterWEnableSixteenAsyncMuxedInput OutBox1
+	Shift_Register_16_Enable_Async_Muxed OutBox1
 	(
 		.clk(~(SPIClock ^ registerSignal)),
 		.resetn(resetn), 
@@ -138,7 +138,7 @@ module ADCConnector
 	Deserializers
 	
 	*/
-	ShiftRegisterWEnableFourteen InBox1A
+	Shift_Register_14_Enable_Async InBox1A
 	(
 		.clk(~(SPIClock ^ registerSignal)), 
 		.resetn(resetn), 
@@ -147,7 +147,7 @@ module ADCConnector
 		.q(dataIntoMaster1A)
 	);
 													
-	ShiftRegisterWEnableFourteen InBox1B
+	Shift_Register_14_Enable_Async InBox1B
 	(
 		.clk(~(SPIClock ^ registerSignal)), 
 		.resetn(resetn), 
@@ -161,21 +161,21 @@ module ADCConnector
 	Tri-state buffers
 	
 	*/
-	TriStateBuffer BorderGuardOut1
+	TriStateBuffer_2_1bit BorderGuardOut1
 	(
 		.In(outboxLineOut1), 
 		.Select(Ser_en), 
 		.Out(MOSI1)
 	);
 											
-	TriStateBuffer BorderGuardIn1A
+	TriStateBuffer_2_1bit BorderGuardIn1A
 	(
 		.In(MISO1A), 
 		.Select(Des_en), 
 		.Out(inboxLineIn1A)
 	);
 											
-	TriStateBuffer BorderGuardIn1B
+	TriStateBuffer_2_1bit BorderGuardIn1B
 	(
 		.In(MISO1B), 
 		.Select(Des_en), 

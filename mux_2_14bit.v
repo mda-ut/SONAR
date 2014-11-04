@@ -1,4 +1,10 @@
-module mux2to1_14bit(data1, data0, sel, result);
+/*
+Anthony De Caria - November 04, 2014
+
+This module creates a 14-bit two input Mux.
+*/
+
+module mux_2_14bit(data1, data0, sel, result);
 	input [13:0] data0, data1;
 	input sel;
 	output reg [13:0] result;
